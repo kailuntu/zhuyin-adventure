@@ -1,4 +1,19 @@
 import {symbols} from './lesson.js';
+import {splitZhuyin} from './logic.js';
+export function annotatedCardName(card){
+ const name=document.createElement('div');name.className='card-annotated-name';
+ Array.from(card.pokemon.name).forEach((character,i)=>{
+  const reading=character===card.character?card.reading:card.pokemon.zhuyin[i];
+  const unit=document.createElement('span');unit.className='card-word';unit.setAttribute('aria-label',`${character}，${reading}`);
+  const han=document.createElement('span');han.className='card-han';han.textContent=character;
+  const {symbols:parts,tone}=splitZhuyin(reading);
+  const ruby=document.createElement('span');ruby.className='card-ruby'+(tone==='˙'?' neutral':'');ruby.setAttribute('aria-hidden','true');
+  const column=document.createElement('span');column.className='card-ruby-column';
+  parts.forEach(symbol=>{const el=document.createElement(symbol===card.symbol?'strong':'span');el.textContent=symbol;column.append(el);});
+  ruby.append(column);if(tone){const el=document.createElement('span');el.className='card-tone';el.textContent=tone;ruby.append(el);}
+  unit.append(han,ruby);name.append(unit);
+ });return name;
+}
 // Explicit associations; each selected character and reading can be reviewed independently.
 export const associations=[
  ['ㄅ','波波','波','ㄅㄛ'],['ㄆ','皮卡丘','皮','ㄆㄧˊ'],['ㄇ','喵喵','喵','ㄇㄧㄠ'],['ㄈ','風速狗','風','ㄈㄥ'],
@@ -38,7 +53,7 @@ export function createFlashcards({root,beforeAudio,onPractice}){
   img.onload=()=>{imageFailed=false;img.hidden=concealed;$('flash-image-error').hidden=true;};
   img.onerror=()=>{if(!fallback){fallback=true;img.src=`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${c.pokemon.id}.png`;}else{imageFailed=true;img.hidden=true;$('flash-image-error').hidden=concealed;}};
   img.src=`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${c.pokemon.id}.png`;
-  $('flash-name').replaceChildren(...Array.from(c.pokemon.name).map(ch=>{const el=document.createElement(ch===c.character?'mark':'span');el.textContent=ch;return el;}));
+  $('flash-name').replaceChildren(annotatedCardName(c));
   $('flash-sentence').textContent=`「${c.pokemon.name}」的「${c.character}」，注音裡有 ${c.symbol}。`;
   $('flash-reading').replaceChildren(...Array.from(c.reading).map(symbol=>{const el=document.createElement(symbol===c.symbol?'mark':'span');el.textContent=symbol;return el;}));
   $('flash-reminder').textContent=c.reading.replace(/[ˊˇˋ˙]/gu,'')===c.symbol?'先聽這個注音符號，再留意名字裡的聲調。':`標亮的是今天的 ${c.symbol}；「${c.character}」要把其他注音和聲調一起拼起來念。`;

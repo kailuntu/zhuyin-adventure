@@ -1,9 +1,8 @@
-import {buildCards} from './flashcards.js';
+import {buildCards,annotatedCardName} from './flashcards.js';
 const pages=document.querySelector('#pages'),status=document.querySelector('#status'),printButton=document.querySelector('#print');
 document.querySelector('#retry').onclick=()=>location.reload();
 printButton.onclick=()=>window.print();
 function element(tag,className,text){const node=document.createElement(tag);node.className=className;if(text)node.textContent=text;return node;}
-function highlighted(text,target,className){const node=element('p',className);for(const ch of text)node.append(element(ch===target?'mark':'span','',ch));return node;}
 function loadImage(img,id){
  return new Promise(resolve=>{
   let fallback=false,finished=false;
@@ -23,7 +22,7 @@ async function prepare(){
    const card=element('article','print-card');card.setAttribute('aria-label',`${c.symbol}，${c.pokemon.name}`);
    const top=element('div','card-topline');top.append(element('span','symbol',c.symbol),element('span','group',`${c.group} · ${i+1}/37`));
    const img=element('img','');img.alt=c.pokemon.name;img.width=140;img.height=140;pending.push(loadImage(img,c.pokemon.id));
-   card.append(top,img,highlighted(c.pokemon.name,c.character,'name'),highlighted(c.reading,c.symbol,'reading'),element('p','explanation',`「${c.character}」的字音裡有 ${c.symbol}`),element('p','credit','注音探險 · 圖片／名稱：PokeAPI'));sheet.append(card);
+   card.append(top,img,annotatedCardName(c),element('p','explanation',`找找粗體的 ${c.symbol}，一起念念看！`),element('p','credit','注音探險 · 圖片／名稱：PokeAPI'));sheet.append(card);
   });
   const loaded=await Promise.all(pending);await document.fonts.ready;
   if(loaded.some(ok=>!ok))throw Error('images');
