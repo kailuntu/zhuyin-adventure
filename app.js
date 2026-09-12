@@ -3,6 +3,10 @@ import {createTutor} from './lesson.js';
 import {createFlashcards} from './flashcards.js';
 import {createSpelling} from './spelling.js';
 const $=id=>document.getElementById(id);
+const englishName=document.createElement('p');englishName.id='english-name';englishName.className='english-name';englishName.lang='en';$('name').after(englishName);
+const englishButton=document.createElement('button');englishButton.id='speak-english';englishButton.className='small-button';englishButton.textContent='♫ 聽英文名字';englishButton.disabled=true;englishName.after(englishButton);
+const englishNote=document.createElement('p');englishNote.className='name-tip';englishNote.textContent='英文由裝置語音朗讀，非官方配音。';englishButton.after(englishNote);
+englishButton.onclick=()=>current&&speak(current.englishName,'en-US');
 let data=[],current=null,page=1,progress={},session=new Set(),recognition=null,listening=false,consent=false,requestId=0;
 let recognitionReadings={};
 const readingsReady=fetch('./data/recognition-readings.json').then(res=>{if(!res.ok)throw Error('readings');return res.json();}).then(value=>{recognitionReadings=value;return true;}).catch(()=>false);
@@ -83,11 +87,11 @@ function updateProgress(){
  $('journey-text').textContent=session.size>=5?'今天的 5 位朋友集齊了！也可以繼續探險。':`這次已認識 ${session.size} 位朋友，一起慢慢來。`;
 }
 function showView(view){flashcards.stop();tutor.stop();stop();endMicTest();window.speechSynthesis?.cancel();$('learn-view').hidden=view!=='learn';$('dex-view').hidden=view!=='dex';flashRoot.hidden=view!=='cards';document.querySelectorAll('.nav').forEach(el=>el.classList.toggle('active',el.dataset.view===view));if(view==='dex')renderDex();}
-function speak(text){
+function speak(text,lang='zh-TW'){
  tutor.stop();
  endMicTest();
  stop();if(!('speechSynthesis' in window)){status('這個裝置無法示範朗讀，可以請家長陪你念。');return;}
- window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=.7;const voice=window.speechSynthesis.getVoices().find(v=>/zh[-_]TW/i.test(v.lang));if(voice)u.voice=voice;
+ window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=lang==='en-US'?.8:.7;const voices=window.speechSynthesis.getVoices();const voice=voices.find(v=>v.lang.replace('_','-').toLowerCase()===lang.toLowerCase())||(lang==='en-US'?voices.find(v=>/^en[-_]/i.test(v.lang)):null);if(voice)u.voice=voice;
  u.onerror=()=>status('示範朗讀暫時無法播放，可以請家長陪你念。');window.speechSynthesis.speak(u);
 }
 async function selectPokemon(p){
@@ -96,6 +100,7 @@ async function selectPokemon(p){
  try{sessionStorage.setItem('zhuyin-last-question',String(p.id));}catch{}
  endMicTest();speechHelp.hidden=true;
  stop();window.speechSynthesis?.cancel();current=p;const ticket=++requestId;
+ englishName.textContent=p.englishName;englishButton.disabled=!p.englishName;
  $('record').disabled=!Recognition;$('speak').disabled=false;$('number').textContent=`NO. ${String(p.id).padStart(4,'0')}`;
  $('pokemon-image').classList.add('silhouette');$('pokemon-image').alt='等待現身的寶可夢黑影';$('pokemon-image').hidden=false;$('image-error').hidden=true;$('mystery').hidden=false;
  let fallback=false;$('pokemon-image').onerror=()=>{if(!fallback){fallback=true;$('pokemon-image').src=sprite(p.id);}else{$('pokemon-image').hidden=true;$('image-error').hidden=false;}};
@@ -155,7 +160,7 @@ function startRecognition(){
 function renderDex(){
  const filtered=filterPokemon(data,$('search').value,+$('generation').value,$('collected-only').checked,progress),pages=Math.max(1,Math.ceil(filtered.length/24));page=Math.min(page,pages);
  $('result-count').textContent=`找到 ${filtered.length} 位朋友 · 點選卡片開始練習`;
- $('dex-grid').replaceChildren(...filtered.slice((page-1)*24,page*24).map(p=>{const b=document.createElement('button');b.className='dex-item';b.setAttribute('aria-label',`${p.name}，${progress[p.id]?'已認識':'尚未解鎖'}，開始練習`);const num=document.createElement('small');num.textContent=`NO. ${String(p.id).padStart(4,'0')}`;const img=document.createElement('img');img.src=sprite(p.id);img.alt='';img.loading='lazy';img.width=110;img.height=110;img.className=progress[p.id]?'':'locked';img.onerror=()=>{img.hidden=true;};const name=document.createElement('strong');name.textContent=p.name;b.append(num,img,name);if(progress[p.id]){const check=document.createElement('span');check.className='caught';check.textContent=progress[p.id]==='voice'?'★':'♡';b.append(check);}b.onclick=()=>{showView('learn');selectPokemon(p);window.scrollTo({top:0,behavior:'smooth'});};return b;}));
+ $('dex-grid').replaceChildren(...filtered.slice((page-1)*24,page*24).map(p=>{const b=document.createElement('button');b.className='dex-item';b.setAttribute('aria-label',`${p.name}，${progress[p.id]?'已認識':'尚未解鎖'}，開始練習`);const num=document.createElement('small');num.textContent=`NO. ${String(p.id).padStart(4,'0')}`;const img=document.createElement('img');img.src=sprite(p.id);img.alt='';img.loading='lazy';img.width=110;img.height=110;img.className=progress[p.id]?'':'locked';img.onerror=()=>{img.hidden=true;};const name=document.createElement('strong');name.textContent=p.name;const en=document.createElement('span');en.className='english-name';en.lang='en';en.textContent=p.englishName;b.append(num,img,name,en);if(progress[p.id]){const check=document.createElement('span');check.className='caught';check.textContent=progress[p.id]==='voice'?'★':'♡';b.append(check);}b.onclick=()=>{showView('learn');selectPokemon(p);window.scrollTo({top:0,behavior:'smooth'});};return b;}));
  if(!filtered.length){const empty=document.createElement('p');empty.className='empty';empty.textContent='這裡還沒有朋友，試試其他條件或開始一場探險吧。';$('dex-grid').append(empty);}
  $('page-info').textContent=`${page} / ${pages}`;$('prev-page').disabled=page===1;$('next-page').disabled=page===pages;
 }

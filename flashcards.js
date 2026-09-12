@@ -38,8 +38,22 @@ export function createFlashcards({root,beforeAudio,onPractice}){
  root.innerHTML=`<div class="dex-heading"><div><span class="eyebrow">MY BOPOMOFO FRIENDS</span><h2>一個注音，一位寶可夢朋友</h2><p class="muted">先聽符號的聲音，再看看它藏在哪個名字裡。</p></div><span class="pill">37 張聯想字卡</span></div><div class="flash-layout"><aside class="card symbol-picker"><h3>今天想認識哪個注音？</h3><div class="symbol-groups"></div><p class="muted">ㄧ、ㄨ、ㄩ也可以單獨成音，或和其他韻符組成結合韻。</p></aside><section class="card flash-focus"><div class="card-top"><span class="pill" id="flash-group"></span><span id="flash-position"></span></div><div class="flash-main"><div class="flash-sound"><span id="flash-symbol" aria-label="目前的注音符號"></span><button class="next" id="flash-listen">♫ 聽注音符號</button></div><div class="flash-friend"><img id="flash-image" width="230" height="230" alt=""><p id="flash-image-error" hidden>圖片暫時無法載入，仍可聽音與看名字。</p><span id="flash-question" hidden>?</span><div id="flash-name"></div></div></div><div class="flash-explanation" id="flash-explanation"><p id="flash-sentence"></p><div id="flash-reading" aria-label="代表字的完整注音"></div><p class="muted" id="flash-reminder"></p></div><p id="flash-recall" class="flash-recall" hidden>想一想：哪位寶可夢的名字裡有這個注音？</p><div class="flash-actions"><button class="small-button" id="flash-name-audio">♫ 聽寶可夢名字</button><button class="small-button" id="flash-hide" aria-pressed="false">遮住圖片想一想</button><button class="next" id="flash-practice">練習這隻寶可夢 →</button></div><p id="flash-status" class="status" role="status" aria-live="polite"></p><div class="flash-pagination"><button class="small-button" id="flash-prev">← 上一張</button><button class="text-button" id="flash-random">隨機抽一張</button><button class="small-button" id="flash-next">下一張 →</button></div></section></div><p class="muted">符號示範音：教育部《國語注音符號手冊》（CC BY 4.0）；名稱朗讀：裝置語音。代表配對為本站教學設計，寶可夢名稱與圖片來自 PokeAPI。看字卡不會自動解鎖答題收藏。</p>`;
  const printLink=document.createElement('a');printLink.href='./print-cards.html';printLink.target='_blank';printLink.rel='noopener';printLink.className='small-button';printLink.textContent='▤ 列印／匯出 37 張字卡';printLink.addEventListener('click',()=>{stop();beforeAudio();});root.querySelector('.dex-heading').append(printLink);
  const $=id=>root.querySelector(`#${id}`);
+ const english=document.createElement('p');english.className='english-name';english.lang='en';$('flash-name').after(english);
+ const englishButton=document.createElement('button');englishButton.className='small-button';englishButton.id='flash-english-audio';englishButton.textContent='♫ 聽英文名字';$('flash-name-audio').after(englishButton);
+ const note=document.createElement('p');note.className='muted';note.textContent='英文由裝置語音朗讀，非官方配音。';root.append(note);
+ englishButton.onclick=()=>{
+  stop();beforeAudio();if(!cards.length)return;
+  if(!window.speechSynthesis){$('flash-status').textContent='此裝置無法朗讀英文，可以請家長陪你念。';return;}
+  const ticket=playId,u=new SpeechSynthesisUtterance(cards[position].pokemon.englishName);u.lang='en-US';u.rate=.8;
+  const voices=window.speechSynthesis.getVoices(),voice=voices.find(v=>/^en[-_]US$/i.test(v.lang))||voices.find(v=>/^en[-_]/i.test(v.lang));if(voice)u.voice=voice;
+  $('flash-status').textContent='一起聽聽英文名字！';
+  u.onend=()=>{if(ticket===playId)$('flash-status').textContent='換你念念英文名字！';};
+  u.onerror=()=>{if(ticket===playId)$('flash-status').textContent='英文語音暫時無法播放，請確認裝置有可用的英文語音。';};
+  window.speechSynthesis.speak(u);
+ };
  function stop(){playId++;if(audio){audio.onended=null;audio.onerror=null;audio.pause();audio=null;}window.speechSynthesis?.cancel();}
  function reveal(value){
+  english.hidden=value;englishButton.disabled=value;
   concealed=value;$('flash-image').hidden=value||imageFailed;$('flash-name').hidden=value;$('flash-explanation').hidden=value;
   $('flash-question').hidden=!value;$('flash-recall').hidden=!value;$('flash-name-audio').disabled=value;
   $('flash-hide').textContent=value?'看看代表寶可夢':'遮住圖片想一想';$('flash-hide').setAttribute('aria-pressed',String(value));
@@ -54,6 +68,7 @@ export function createFlashcards({root,beforeAudio,onPractice}){
   img.onerror=()=>{if(!fallback){fallback=true;img.src=`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${c.pokemon.id}.png`;}else{imageFailed=true;img.hidden=true;$('flash-image-error').hidden=concealed;}};
   img.src=`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${c.pokemon.id}.png`;
   $('flash-name').replaceChildren(annotatedCardName(c));
+  english.textContent=c.pokemon.englishName;
   $('flash-sentence').textContent=`「${c.pokemon.name}」的「${c.character}」，注音裡有 ${c.symbol}。`;
   $('flash-reading').replaceChildren(...Array.from(c.reading).map(symbol=>{const el=document.createElement(symbol===c.symbol?'mark':'span');el.textContent=symbol;return el;}));
   $('flash-reminder').textContent=c.reading.replace(/[ˊˇˋ˙]/gu,'')===c.symbol?'先聽這個注音符號，再留意名字裡的聲調。':`標亮的是今天的 ${c.symbol}；「${c.character}」要把其他注音和聲調一起拼起來念。`;

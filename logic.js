@@ -1,7 +1,7 @@
 export const boundaries=[0,151,251,386,493,649,721,809,905,1025];
 export function filterPokemon(data,query,generation,collectedOnly,progress){
  const q=query.trim().toLowerCase();
- return data.filter(p=>(!q||p.name.includes(q)||String(p.id).padStart(4,'0').includes(q))&&(!generation||(p.id>boundaries[generation-1]&&p.id<=boundaries[generation]))&&(!collectedOnly||progress[p.id]));
+ return data.filter(p=>(!q||p.name.includes(q)||p.englishName?.toLowerCase().includes(q)||String(p.id).padStart(4,'0').includes(q))&&(!generation||(p.id>boundaries[generation-1]&&p.id<=boundaries[generation]))&&(!collectedOnly||progress[p.id]));
 }
 export function normalize(text){return text.normalize('NFKC').replace(/[\s\p{P}]/gu,'').toLowerCase();}
 export function canonicalReading(value){return value.replace(/[ˉ˙\s]/gu,'')+(value.includes('˙')?'˙':'');}

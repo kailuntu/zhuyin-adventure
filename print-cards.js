@@ -22,7 +22,8 @@ async function prepare(){
    const card=element('article','print-card');card.setAttribute('aria-label',`${c.symbol}，${c.pokemon.name}`);
    const top=element('div','card-topline');top.append(element('span','symbol',c.symbol),element('span','group',`${c.group} · ${i+1}/37`));
    const img=element('img','');img.alt=c.pokemon.name;img.width=140;img.height=140;pending.push(loadImage(img,c.pokemon.id));
-   card.append(top,img,annotatedCardName(c),element('p','explanation',`找找粗體的 ${c.symbol}，一起念念看！`),element('p','credit','注音探險 · 圖片／名稱：PokeAPI'));sheet.append(card);
+   const english=element('p','english-name',c.pokemon.englishName);english.lang='en';
+   card.append(top,img,annotatedCardName(c),english,element('p','explanation',`找找粗體的 ${c.symbol}，一起念念看！`),element('p','credit','注音探險 · 圖片／名稱：PokeAPI'));sheet.append(card);
   });
   const loaded=await Promise.all(pending);await document.fonts.ready;
   if(loaded.some(ok=>!ok))throw Error('images');
